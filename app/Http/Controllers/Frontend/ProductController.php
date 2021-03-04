@@ -27,6 +27,7 @@ class ProductController extends BaseController
     public function index($link = null, $selected = null)
     {
 
+        //Test first commit
         if (empty($link)) {
             return redirect("/" . $this->locale);
         }
