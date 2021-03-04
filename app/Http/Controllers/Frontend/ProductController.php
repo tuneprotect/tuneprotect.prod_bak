@@ -27,7 +27,7 @@ class ProductController extends BaseController
     public function index($link = null, $selected = null)
     {
 
-        //Test first commit 2
+        //Test new branch portal ipass
         if (empty($link)) {
             return redirect("/" . $this->locale);
         }
