@@ -14,5 +14,7 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         'th/product/result',
         'en/product/result',
+        'th/portal/result',
+        'en/portal/result'
     ];
 }

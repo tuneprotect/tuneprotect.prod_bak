@@ -23,6 +23,7 @@ class ProductController extends BaseController
 {
 
     protected $thankYouParam = '';
+    protected $controller = 'product';
 
     public function index($link = null, $selected = null)
     {
@@ -117,6 +118,7 @@ class ProductController extends BaseController
             ->with('locales')
             ->first();
 
+        $this->bodyData['controller'] = $this->controller;
         $this->bodyData['faq'] = $this->setFaq(ProjectEnum::WEB_CONTENT_FAQ,$this->bodyData['current_package']->id);
 
         try {
@@ -125,8 +127,17 @@ class ProductController extends BaseController
 
         }
 
-        return $this->genView('frontend.page.product');
-    }
+        // dd($this->controller);
+        //Swich main page product / portal
+        if($this->controller != 'product')
+        {
+            return $this->genView('frontend.page.portal');
+        }
+        else
+        {
+            return $this->genView('frontend.page.product');
+        }
+   }
 
     protected function combindObj($data)
     {
@@ -296,15 +307,14 @@ class ProductController extends BaseController
 
         $arr_post['customer_email'] = $obj->data["fdEmail"];
         $arr_post['user_defined_1'] = ($log_id ? implode(',', $log_id) : $obj->log_id);
-        $arr_post['result_url_1'] = url("{$this->locale}/product/result");
+        $arr_post['user_defined_2'] = session('return_link');
+        $arr_post['result_url_1'] = url("{$this->locale}/{$this->controller}/result");
         $arr_post['payment_option'] = "CC,FULL";
         $arr_post['default_lang'] = $this->locale;
         $params = join($arr_post);
         $arr_post['hash_value'] = hash_hmac('sha256', $params, config('payment.secret'), false);    //Compute hash value
 
         $this->bodyData['arr_post'] = $arr_post;
-
-
         return $this->genView('frontend.page.payment');
     }
 
@@ -340,6 +350,21 @@ class ProductController extends BaseController
             ],
             'body' => json_encode([
                 'jsonString' => json_encode($obj)
+            ])
+        ]);
+        return json_decode($response->getBody()->getContents(), true);
+    }
+
+    protected function sendToApiPortalLogin($portal_key)
+    {
+        $client = new Client();
+        $response = $client->request('POST', config('tune-api.url') . 'loginPortal', [
+            'auth' => [config('tune-api.user'), config('tune-api.password')],
+            'headers' => [
+                'Content-Type' => 'application/json'
+            ],
+            'body' => json_encode([
+                'KeyValue' => $portal_key
             ])
         ]);
         return json_decode($response->getBody()->getContents(), true);
@@ -414,6 +439,7 @@ class ProductController extends BaseController
     public function thankyou(Request $request)
     {
         $this->bodyData['doc_no'] = $request->session()->get('doc_no');
+        $this->bodyData['return_link'] = '/'.$this->locale;
         return $this->genStatusPage(ProjectEnum::STATIC_PAGE_PAYMENT_THANK_YOU);
     }
 
@@ -427,6 +453,7 @@ class ProductController extends BaseController
                 $result = $this->sendToApiIssue($request->input('order_id'), $request->input('payment_channel'), $request->input('masked_pan'));
                 if ($result) {
                     $request->session()->put('doc_no', implode(', ', $result));
+                    $request->session()->put('return_link', $request->input('user_defined_2'));
                     $func = 'thankyou';
                 } else {
                     $func = 'error';
@@ -445,7 +472,10 @@ class ProductController extends BaseController
                 $func = 'error';
         }
 
-        return redirect()->route('current', ['locale' => $this->locale, 'controller' => 'product', 'func' => $func, 'params' => $this->thankYouParam]);
+
+        //dd($this->controller);
+
+        return redirect()->route('current', ['locale' => $this->locale, 'controller' => $this->controller, 'func' => $func, 'params' => $this->thankYouParam]);
     }
 
     public function test2c2p()

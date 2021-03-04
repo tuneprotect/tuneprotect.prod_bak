@@ -10,6 +10,7 @@ class BaseInsuranceObject
     public $fdCard_No;
     public $RefCode;
     public $fdTitle;
+    public $fdKeys;
     public $fdName;
     public $fdSurname;
     public $fdSex;
